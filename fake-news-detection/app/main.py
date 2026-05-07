@@ -2,8 +2,17 @@ from pathlib import Path
 import pickle
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -38,11 +47,17 @@ def predict(data: NewsInput):
 
     if data.model == "nb":
         pred = nb_model.predict(vec)
+        proba = nb_model.predict_proba(vec)
+
     else:
         pred = logistic_model.predict(vec)
+        proba = logistic_model.predict_proba(vec)
+    
+    confidence = round(max(proba[0]) * 100, 2)
 
     return {
         "model_used": data.model,
-        "prediction": "Fake News" if pred[0] == 1 else "Real News"
+        "prediction": "Fake News" if pred[0] == 1 else "Real News",
+        "confidence": confidence
     }
     
